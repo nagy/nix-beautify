@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 /*
  *    nix-beautify formats/indents nix source code.
  *    Copyright (C) <info@nixcloud.io> nixcloud GmbH
@@ -16,9 +17,11 @@
  *    along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-var fs = require('fs');
-var stdinBuffer = fs.readFileSync(0); // STDIN_FILENO = 0
-console.log(format(stdinBuffer.toString()));
+const fs = require('fs');
+const stdinBuffer = fs.readFileSync(0); // STDIN_FILENO = 0
+const formatted = format(stdinBuffer.toString());
+// print the formatted output
+console.log(formatted);
 
 function format(input) {
   var indent = 0;

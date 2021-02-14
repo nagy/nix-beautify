@@ -1,19 +1,15 @@
 with import <nixpkgs> {};
-
-pkgs.stdenv.mkDerivation {
+stdenv.mkDerivation {
   name = "nix-beautify";
   src = ./.;
 
-  phases = [ "install" ];
+  phases = [ "installPhase" ];
 
-  install = ''
+  buildInputs = [ nodejs ];
+
+  installPhase = ''
     mkdir -p $out/bin
-    mkdir -p $out/js
-    cp $src/nix-beautify.js $out/js
-    cat > $out/bin/nix-beautify << EOF
-    #!/usr/bin/env bash 
-    ${nodejs}/bin/node $out/js/nix-beautify.js
-    EOF
-    chmod u+x $out/bin/nix-beautify
+    cp $src/nix-beautify.js $out/bin/nix-beautify
+    patchShebangs $out/bin/nix-beautify
   '';
 }
