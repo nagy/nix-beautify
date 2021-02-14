@@ -19,24 +19,21 @@
 
 const fs = require('fs');
 const stdinBuffer = fs.readFileSync(0); // STDIN_FILENO = 0
-const formatted = format(stdinBuffer.toString());
-// print the formatted output
-console.log(formatted);
 
-function format(input) {
+// print the formatted output
+formatNixExpression(stdinBuffer.toString(), process.stdout);
+
+function formatNixExpression(input, stream) {
   var indent = 0;
   var indentStr = "";
-  var doc = "";
-  var changed = false;
   var splitDoc = input.split("\n");
 
-  for (var i = 0; i < splitDoc.length; i++){
-    //failesafe that is needed because multiline comments as well as multiline strings are currently not detected
+  for (const line of splitDoc){
+    // failesafe that is needed because multiline comments as well as multiline
+    // strings are currently not detected
     if (indent < 0) {
         indent = 0;
     }
-
-    var line = splitDoc[i];
 
     // cut comments
     var trimmedLine = line.trim();
@@ -46,56 +43,37 @@ function format(input) {
     }
     // cut nix-strings
     trimmedLine = trimmedLine.replace(/\".*\"/g, " ");
+    var replacedLine = line;
 
 
-    //matches ( [ { and 'let'
+    // matches ( [ { and 'let'
     var open = (trimmedLine.match(/[\[{\(]/g) || []).length;
-    //match let
+    // match let
     open += (trimmedLine.match(/([\s=;\(]|^)let([\({\s]|$)/g) || []).length;
-    //matches ) ] } and 'in'
+    // matches ) ] } and 'in'
     var close = ((" " +trimmedLine + " ").match(/[\]}\)]/g) || []).length;
     close += (trimmedLine.match(/([\s=;\(]|^)in([\({\s]|$)/g) || []).length;
 
     if (close > open && trimmedLine.length <= 3){
       indent = indent + open - close;
-      indentStr = "";
-      for (var j = 0; j < indent; j++){
-        indentStr = indentStr + "  ";
-      }
+      indentStr = "  ".repeat(indent);
     }
 
-    var currentIndent = line.search(/\S|$/) //current space count
+    const currentIndent = line.search(/\S|$/) //current space count
 
-    //check if the indentation needs to change
+    // check if the indentation needs to change
     if (indent*2 !== currentIndent){
-      //replace current indentation with the new one
-      var from = {
-        line: i,
-        ch: 0,
-      }
-      var to = {
-        line: i,
-        ch: currentIndent, //current space count
-      }
-      line = indentStr + line.substring(currentIndent, line.length);
-      changed = true;
+      // replace current indentation with the new one
+      replacedLine = indentStr + line.substring(currentIndent, line.length);
     }
 
+    indent = indent + open - close;
     if (open > close){
-      indent = indent + open - close;
-      indentStr = "";
-      for (var j = 0; j < indent; j++){
-        indentStr = indentStr + "  ";
-      }
-    }else if (close > open && trimmedLine.length > 3){
-      indent = indent + open - close;
-      indentStr = "";
-      for (var j = 0; j < indent; j++){
-        indentStr = indentStr + "  ";
-      }
+      indentStr = "  ".repeat(indent);
+    } else if (close > open && trimmedLine.length > 3){
+      indentStr = "  ".repeat(indent+1);
     }
 
-    doc = doc + line + "\n"
+    stream.write(replacedLine + "\n")
   }
-  return doc;
 }
